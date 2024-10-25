@@ -1,0 +1,1 @@
+model,fold,num_epochs,batch_size,learning_rate,loss,accuracy,precision,recall,f1,accuracy_sv,precision_sv,recall_sv,f1_sv,roc_auc

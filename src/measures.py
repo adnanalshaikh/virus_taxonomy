@@ -1,22 +1,28 @@
 from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score,
-    confusion_matrix, roc_auc_score, multilabel_confusion_matrix
+    accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 )
 import numpy as np
 import pandas as pd
-from scipy.stats import mode
-import numpy as np
-import tensorflow as tf
-from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score
 from tensorflow.keras.models import load_model
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+from pathlib import Path
+
+HOME_DIR = Path(__file__).resolve().parent.parent
 
 class Measures:
-    def __init__(self, filename=None):
+    def __init__(self, dp, filename=None):
+        self.dp = dp
+        self.node_dir = HOME_DIR / "data" / f"{dp.classifier_name}"
+        self.node_dir.mkdir(parents=True, exist_ok=True)
+        
+        
         self.filename = filename or "measures.csv"
         
         # Define the columns we want to track
         header = [
-            'model', 'fold', 'num_epochs', 'batch_size', 'learning_rate',
+            'classifier', 'model', 'fold', 'num_epochs', 'batch_size', 'learning_rate',
             'loss', 'accuracy', 'precision', 'recall', 'f1',
             'accuracy_sv', 'precision_sv', 'recall_sv', 'f1_sv', 'roc_auc'
         ]
@@ -24,6 +30,12 @@ class Measures:
             self.df = pd.DataFrame(columns=header)
         else:
             self.df = pd.read_csv(filename)
+        
+        # heirarchy measures 
+        self.h_header = ['foldid', 'h_accuracy', 'h_precision', 'h_recall', 'h_f1']
+        self.hdf = pd.DataFrame(columns=self.h_header)
+
+        # make a reults directory if not exist 
 
     def voting_predict(self, model, df_test):
         y_predict = []
@@ -65,24 +77,26 @@ class Measures:
         return np.array(y_predict)
     
     def update(self, model, df_test, hist, config, foldid=0):
+        
+        #create directory in the data directory to save all data related to this taxa 
+        dp = self.dp
         # Prepare test data
         x_test = np.array([list(seq) for seq in df_test['seq']])
-        
-        # Ensure y_test is a 1D array of class labels, not one-hot encoded
         y_test = df_test['target'].values  # Should be 1D, like [0, 1, 2, ...]
     
         # Initialize row with hyperparameters and metrics
         row = {
+            'classifier' : dp.classifier_name,
             'model': config['modelid'],
             'fold': foldid,
             'batch_size': config['batch_size'],
             'learning_rate': config['learning_rate'],
+            'es_patience': config['es_patience'],
             'num_epochs': len(hist.history['loss'])
         }
         
         # Evaluate model on test set
         row['loss'], row['accuracy'] = model.evaluate(x_test, y_test, verbose=0)
-        
         # Predict class probabilities
         y_pred_probs = model.predict(x_test)  # Predict probabilities, shape (n_samples, n_classes)
         
@@ -103,28 +117,61 @@ class Measures:
             y_pred_test_sv.append([y_pred_sv[i, 0], y_pred_sv[i, 1], target_label])
         
         y_pred_test_sv = np.array(y_pred_test_sv)
+        y_pred = y_pred_test_sv[:, 1]
+        y_true = y_pred_test_sv[:, 2]
         
-        row['f1_sv'] = f1_score(y_pred_test_sv[:, 2], y_pred_test_sv[:, 1], average='micro')
-        row['precision_sv'] = precision_score(y_pred_test_sv[:, 2], y_pred_test_sv[:, 1], average='micro')
-        row['recall_sv'] = recall_score(y_pred_test_sv[:, 2], y_pred_test_sv[:, 1], average='micro')
-        row['accuracy_sv'] = accuracy_score(y_pred_test_sv[:, 2], y_pred_test_sv[:, 1])
+        row['f1_sv'] = f1_score(y_true, y_pred, average='micro')
+        row['precision_sv'] = precision_score(y_true, y_pred, average='micro')
+        row['recall_sv'] = recall_score(y_true, y_pred, average='micro')
+        row['accuracy_sv'] = accuracy_score(y_true, y_pred)
         
-        # Compute ROC AUC (for multi-class classification)
+        class_names = dp.terget_to_index.keys()
+        report = classification_report(y_true, y_pred, target_names=class_names)
+        class_report_fn = self.node_dir / f'{dp.classifier_name}_class_report_{foldid}.txt'
+        with open(class_report_fn, 'w') as file:
+            file.write(report)
+    
+        conf_matrix = confusion_matrix(y_true, y_pred)
+        conf_matrix_fn = self.node_dir / f'{dp.classifier_name}_conf_matrix_{foldid}.npy'
+        np.save(conf_matrix_fn, conf_matrix)
+        
+        
+        #disp = ConfusionMatrixDisplay(conf_matrix, display_labels=['Alphaflexiviridae', 'Betaflexiviridae', 'Tymoviridae'])
+        #disp.plot(cmap='viridis')  # Optional: Customize the color map
+        #plt.title("Confusion Matrix")
+        #plt.show()
+    
+        print("============================================")
+        print(f'{dp.classifier_name}_classifier_fold_{foldid} results\n')
+        print("Report:\n")
+        print(report)
+        print("Confusion matrix:\n")
+        print(conf_matrix)
+        
         try:
-            row['roc_auc'] = roc_auc_score(y_test, y_pred_probs, multi_class="ovr", average="macro")
+            # Check if it's multi-class or binary classification
+            if len(set(y_test)) > 2:  # Multi-class
+                roc_auc = roc_auc_score(y_test, y_pred_probs, multi_class="ovr", average="macro")
+            else:  # Binary classification
+                roc_auc = roc_auc_score(y_test, y_pred_probs[:, 1])  # Use probabilities for the positive class
         except ValueError as e:
             print(f"Error calculating ROC AUC: {e}")
-            row['roc_auc'] = None  # Set to None or handle the error appropriately
-    
-        # Append row to the DataFrame
-        self.df = self.df.append(row, ignore_index=True)
+            roc_auc = None  # Handle error gracefully
         
-        # Print out the metrics
-        for k, v in row.items():
-            print(f"{k}: {v}")
+        # Store the result
+        row['roc_auc'] = roc_auc
+        row['report'] = report
+        row['conf_matrix'] = conf_matrix
+        # Append row to the DataFrame
+        #self.df = self.df.append(row, ignore_index=True)
+        
+        row_df = pd.DataFrame([row])  # Ensure row is wrapped in a list to create a DataFrame
+        self.df = pd.concat([self.df, row_df], ignore_index=True)
 
+        neasures_fn = self.node_dir / self.filename
+        self.df.to_csv(neasures_fn, index=False)
 
-    def evaluate_hierarchical_models_v5(self, df_test):
+    def evaluate_hierarchical_models_v5(self, foldid, df_test):
         """
         Evaluates hierarchical models M1, M2, and M3 on the given test data.
     
@@ -179,87 +226,29 @@ class Measures:
             df_results = pd.merge(df_results, df_results_order_1[['id', 'pred_family_1']], on='id', how='left')
             df_results['pred_family'] = df_results['pred_family_1'].combine_first(df_results['pred_family'])
             df_results.drop(columns = ['pred_family_1'], inplace = True)
-        accuracy = accuracy_score(df_results['true_family'], df_results['pred_family'])
         
+        accuracy = accuracy_score(df_results['true_family'], df_results['pred_family'])
         f1 = f1_score(df_results['true_family'], df_results['pred_family'], average='weighted', zero_division=0)
         recall = recall_score(df_results['true_family'], df_results['pred_family'], average='weighted', zero_division=0)
         precision = precision_score(df_results['true_family'], df_results['pred_family'], average='weighted', zero_division=0)
         
         # Return the results
         results = {
-            "accuracy": accuracy,
-            "f1_score": f1,
-            "recall": recall,
-            "precision": precision
+            "h_accuracy": accuracy,
+            "h_f1_score": f1,
+            "h_recall": recall,
+            "h_precision": precision
         }
         
-        print (results)
-        
-        return results
+        # Create a new DataFrame for the row to append
+        new_row = pd.DataFrame([dict(zip(self.h_header, [foldid, accuracy, precision, recall, f1]))])
 
+        # Append using pd.concat
+        self.hdf = pd.concat([self.hdf, new_row], ignore_index=True)
 
-    def evaluate_hierarchical_models_v5__(self, test_data):
-        """
-        Evaluates hierarchical models M1, M2, and M3 on the given test data.
-    
-        Parameters:
-        - test_data (pd.DataFrame): Test dataset with columns 'id', 'seq', 'order', 'family'
-        - m1_path (str): Path to the trained Model M1
-        - m2_path (str): Path to the trained Model M2
-        - m3_path (str): Path to the trained Model M3
-    
-        Returns:
-        - A dictionary containing accuracy, f1, recall, and precision
-        """
-        
-        # Load models
-        model_m1 = load_model('class_model.h5')
-        model_m2 = load_model('order_0_model.h5')
-        model_m3 = load_model('order_1_model.h5')
-        
-        # Extract features and true labels
-        X_test = np.array(list(test_data['seq'].values))  # Sequences as array
-        y_true_order = test_data['order_encoded'].values  # True order labels
-        y_true_family = test_data['family_encoded'].values  # True family labels
-    
-        # Step 1: Use Model M1 to predict the order for all test samples
-        y_pred_order = model_m1.predict(X_test)
-        y_pred_order = np.argmax(y_pred_order, axis=1)  # Assuming softmax output
-        
-        # Step 2: Initialize family predictions (mark incorrect order predictions as invalid family)
-        final_family_predictions = np.full_like(y_true_family, -1)  # Default to -1 for incorrect order predictions
-        
-        # Step 3: Identify correctly predicted orders
-        correct_order_indices = np.where(y_pred_order == y_true_order)[0]  # Indices where M1's prediction is correct
-        
-        # Step 4: Slice the test data for M2 and M3 based on correct predictions
-        m2_indices = np.where(y_pred_order[correct_order_indices] == 0)[0]  # Correct samples predicted for M2
-        m3_indices = np.where(y_pred_order[correct_order_indices] == 1)[0]  # Correct samples predicted for M3
-        
-        # Step 5: Pass the correct samples to M2 and M3
-        if len(m2_indices) > 0:
-            X_test_m2 = X_test[correct_order_indices][m2_indices]
-            m2_predictions = model_m2.predict(X_test_m2)
-            final_family_predictions[correct_order_indices[m2_indices]] = np.argmax(m2_predictions, axis=1)
-    
-        if len(m3_indices) > 0:
-            X_test_m3 = X_test[correct_order_indices][m3_indices]
-            m3_predictions = model_m3.predict(X_test_m3)
-            final_family_predictions[correct_order_indices[m3_indices]] = np.argmax(m3_predictions, axis=1)
-        
-        # Step 6: Calculate metrics (consider all predictions, including the incorrect ones marked as -1)
-        accuracy = accuracy_score(y_true_family, final_family_predictions)
-        f1 = f1_score(y_true_family, final_family_predictions, average='weighted', zero_division=0)
-        recall = recall_score(y_true_family, final_family_predictions, average='weighted', zero_division=0)
-        precision = precision_score(y_true_family, final_family_predictions, average='weighted', zero_division=0)
-        
-        # Return the results
-        results = {
-            "accuracy": accuracy,
-            "f1_score": f1,
-            "recall": recall,
-            "precision": precision
-        }
+        filename = "h_" + self.filename
+        self.hdf.to_csv(filename, index=False)
+        print (self.hdf)
         
         return results
 
@@ -270,8 +259,3 @@ class Measures:
     def write_measures(self):
         self.df.to_csv(self.filename, index=False)
 
-    def eval(self):
-        """
-        This function can be further extended based on the problem specifics.
-        """
-        pass

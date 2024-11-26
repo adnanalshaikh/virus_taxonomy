@@ -21,19 +21,22 @@ class DataPreProcess:
         
         classifier = self.config.get('classifier', 'family')
         df = self.classifier_data (df, classifier, node)
+        self.classifier_name = node
         
         self.seq_type = self.config.get('seq_type', 'seq')
         if self.seq_type != 'seq':
             df = df.rename(columns={self.seq_type: 'seq'})
         
         self.terget_to_index = {taxa: i for i, taxa in enumerate(df['target'].unique())}
+        print("targets_dict: ", self.terget_to_index)
+        
         df['target'] = df['target'].map(self.terget_to_index)
         df['id'] = df.index
         
         df_taxo = df[['id', 'target', 'order', 'family']].copy()
         df = df[['id', 'seq', 'target', 'order', 'family']]
 
-        print(df[['id', 'target']].assign(seq_length=df['seq'].apply(len)))
+        #print(df[['id', 'target']].assign(seq_length=df['seq'].apply(len)))
 
         self.nucleic_acids = config.get('nucleic_acids', 'DNA')
         
@@ -52,8 +55,9 @@ class DataPreProcess:
             df['target'] = df['order']
             #df = df.rename(columns={'order': 'target'})
         elif classifier == 'family':
-            df = df[df['order'] == node][[self.seq_type, 'family']]
-            df = df.rename(columns={'family': 'target'})
+            df = df[df['order'] == node][[self.seq_type, 'order', 'family']]
+            #df = df.rename(columns={'family': 'target'})
+            df['target'] = df['family']
         else:
             raise ValueError("Unrecognized nucleic_acids type")
         return df
@@ -223,4 +227,14 @@ class DataPreProcess:
             df_test = df[(df['id'].isin(test_ids)) & (df['is_complement_of'].isna())]
             df_train = df_train[~df_train['id'].isin(df_test['is_complement_of'].dropna())]
             df_test = df_test[~df_test['is_complement_of'].isin(df_train['id'].dropna())]
+            
+            # Check for overlap between training and testing IDs
+            assert not any(df_train['id'].isin(df_test['id'])), "Training IDs overlap with Testing IDs!"
+            assert not any(df_train['id'].isin(df_test['is_complement_of'].dropna())), "Training includes reverse complements from Testing!"
+            assert not any(df_test['id'].isin(df_train['is_complement_of'].dropna())), "Testing includes reverse complements from Training!"
+
+            # Check if any reverse complements overlap between training and testing
+            overlap_complements = set(df_train['id']).intersection(set(df_test['is_complement_of'].dropna()))
+            print(f"Overlapping Reverse Complements: {overlap_complements}")
+
             yield df_train, df_test

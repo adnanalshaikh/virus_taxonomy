@@ -10,6 +10,8 @@ import gc
 import pandas as pd
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import pickle
 
 HOME_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -151,7 +153,7 @@ class CNNModel:
         Ensure no data leakage in train/validation split:
         1) All subsequences of a sequence are in either train or val set.
         2) None of the subsequences of validation sequences are in the train set.
-        3) None of the subsequences of reverse complements of validation sequences are in the train set.
+        3) None of the subsequences of reverse complements of validation sequences are in the train set or test_set
         """
         # Step 1: Get the unique sequence IDs in df_train_test
         unique_ids = df_train_test['id'].unique()
@@ -285,16 +287,16 @@ class CNNModel:
                 verbose=1,
                 class_weight=class_weights_dict
             )
-    
-            # After training and tuning, evaluate the model on the test set (no tuning here)
-            print(f"Evaluating model on test data for fold {foldid}")
-            test_loss, test_acc = model.evaluate(x_test, y_test)
-            print(f"Test Accuracy for fold {foldid}: {test_acc}")
-            
+              
             # Store the evaluation results
+            #self.measures.update(model, df_test, hist, self.config, dp, foldid=foldid)
             self.measures.update(model, df_test, hist, self.config, foldid=foldid)
             del model
             gc.collect()
+            
+            
+            with open(f'hist_{dp.classifier_name}_fold_{foldid}.pkl', 'wb') as file:
+                pickle.dump(hist.history, file)
     
             print("================================================")
             print("================================================")
@@ -318,7 +320,29 @@ class CNNModel:
         df['family_encode'] = df['family'].map(family_mapping)  # Apply encoding to 'family' column
         return df, family_mapping  # Return the DataFrame and the mapping
 
+    def plots(self, history):
+        # Plot training & validation accuracy values
+        plt.figure(figsize=(12, 4))
+        plt.subplot(1, 2, 1)
+        plt.plot(history['accuracy'], label='Training Accuracy')
+        plt.plot(history['val_accuracy'], label='Validation Accuracy')
+        plt.title('Model Accuracy')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.legend()
         
+        # Plot training & validation loss values
+        plt.subplot(1, 2, 2)
+        plt.plot(history['loss'], label='Training Loss')
+        plt.plot(history['val_loss'], label='Validation Loss')
+        plt.title('Model Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
+        
+        plt.show()
+        input("Press Enter to continue...")
+    
     def train_heirarchy_cv(self, dp):
         foldid = 1
         k_folds = self.config.get('k_folds', 5)
@@ -339,7 +363,12 @@ class CNNModel:
             family_mapping[1] = {family: index for index, family in enumerate(dd[1])}
             
             print ("Training model: order ")
+            
             model, hist = self.train_model(df_train_test, dp.terget_to_index)
+            #with open('history.pkl', 'wb') as file:
+                #pickle.dump(hist, file)
+            
+            #self.plots(hist)
             model.save('class_model.h5')  # .h5 is one option (HDF5 format)
             del model
             gc.collect()  
@@ -350,7 +379,12 @@ class CNNModel:
                 print (f"Training model: family : {order} ")
                 model, hist = self.train_model(df_train_test_order, family_mapping[order])
                 
+                #self.plots(hist)
+                
                 model.save(f'order_{order}_model.h5')  # .h5 is one option (HDF5 format)
+                #with open(f'order_{order}_hist.h5', 'wb') as file:
+                    #pickle.dump(hist, file)
+                    
                 del model
                 gc.collect()
             
@@ -362,7 +396,7 @@ class CNNModel:
                           
             df_test = pd.concat(encoded_dfs, ignore_index=True)
             df_test['order_encoded'] = df_test['target']
-            self.measures.evaluate_hierarchical_models_v5(df_test)
+            self.measures.evaluate_hierarchical_models_v5(foldid, df_test)
             # Store the evaluation results
             #self.measures.update(model, df_test, hist, self.config, foldid=foldid)
             #del model

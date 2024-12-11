@@ -1,4 +1,4 @@
-Hierarchical Classification of Viral DNA Sequences Using a CNN-LSTM Framework
+** Hierarchical Classification of Viral DNA Sequences Using a CNN-LSTM Framework **
 
 Reference
 This repository contains the code for the paper:

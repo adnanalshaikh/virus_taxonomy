@@ -158,9 +158,9 @@ def Alsuviricetes_model() :
 
 
 #m = Martellivirales_model()
-m = Tymovirales_refseq_model()
+#m = Tymovirales_refseq_model()
 #m = Alsuviricetes_model()
-#m = Alsuviricetes_refseq_heir_model()
+m = Alsuviricetes_refseq_heir_model()
 
 
    

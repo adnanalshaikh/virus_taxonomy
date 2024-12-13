@@ -56,7 +56,7 @@ def Tymovirales_refseq_model() :
         'k_folds': 5,
         'seq_type' : 'seq',
         'num_species_thresh' : 15,
-        'species_length_thresh' : 1000,
+        'species_length_thresh' : 100,
         'nucleic_acids' : 'DNA',
         'news_measures_file': None, #'measures.csv',  # or None
         }
@@ -158,9 +158,9 @@ def Alsuviricetes_model() :
 
 
 #m = Martellivirales_model()
-#m = Tymovirales_refseq_model()
+m = Tymovirales_refseq_model()
 #m = Alsuviricetes_model()
-m = Alsuviricetes_refseq_heir_model()
+#m = Alsuviricetes_refseq_heir_model()
 
 
    

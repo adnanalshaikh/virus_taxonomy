@@ -15,7 +15,7 @@ class DataPreProcess:
          
         species_length_thresh = self.config.get('species_length_thresh', 100)
         df = self.remove_short_sequences(df, species_length_thresh)
-        
+        print ("species_length_thresh", species_length_thresh)
         num_species_thresh = self.config.get('num_species_thresh', 5)
         df = self.remove_targets_below_threshold(df, 'family', num_species_thresh)
         

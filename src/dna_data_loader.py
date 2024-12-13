@@ -6,16 +6,24 @@ import os
 
 HOME_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-class VirusData:
+
+class VirusDataLoader:
     def __init__ (self, email = "", seq_type = 'refseq'):
+        
+        """
+        Initialize VirusDataLoader with Entrez email and sequence type.
+
+        Args:
+            email (str): Email address for NCBI API usage.
+            seq_type (str): Sequence type, either 'refseq' or 'gb'.
+        """
+        
         Entrez.email = email
         self.seq_type = seq_type
-        
+        self.db = 'nuccore' # NCBI database: 'nuccore' for RefSeq or 'nucleotide' for all genomes
         self.count = 1
-        # chose the database : 
-        # nuccore : for RefSeq which is smaller set with cleaner genome and include more annotation
-        # nucleotide : whole genome 
-        self.db = 'nuccore' #"nucleotide"
+        
+        # Load taxonomy metadata
         data_file_path = os.path.join(HOME_DIR, 'data', 'VMR_MSL39_v1.xlsx')
         self.taxo_meta_df  = pd.read_excel(data_file_path, sheet_name='VMR MSL39 v1')
         
@@ -23,30 +31,62 @@ class VirusData:
         self.taxo_meta_df.drop(['Isolate Sort', 'Exemplar or additional isolate', 'Virus isolate designation'], 
                 axis=1, inplace=True)
         
-        self.df = None
-        self.create_df_header()
-        self.df.attrs['seq_type'] = 'seq_type'
+        # Initialize DataFrame for storing results
+        self.data_frame = self.create_data_frame_header()
+        self.data_frame.attrs['seq_type'] = 'seq_type'
   
+    def create_data_frame_header(self):
+        """Define and initialize the structure of the output DataFrame."""
+        header = [
+            'sort', 'gb_accession', 'refseq_accession', 'accession', 'sequence_version',
+            'date', 'molecule_type', 'topology', 'realm', 'subrealm', 'kingdom', 'subkingdom',
+            'phylum', 'subphylum', 'class', 'subclass', 'order', 'suborder', 'family',
+            'subfamily', 'genus', 'subgenus', 'species', 'virus_name_abbreviation',
+            'virus_name', 'genome_coverage', 'genome_composition', 'host_source',
+            'organism', 'host', 'seq_length', 'seq'
+        ]
+        return  pd.DataFrame(columns=header)
+   
     def fetch_genome(self, accession):
-        handle = Entrez.efetch(db=self.db , id=accession, rettype="gb", retmode="text")
-        record = SeqIO.read(handle, "gb")
-        handle.close()
-        return record
+        """
+        Fetch genome record from NCBI using accession number.
 
-    def create_df_header(self):
-        header = ['sort', 'gb_accession', 'refseq_accession', 'accession', 'sequence_version', 
-                  'date', 'molecule_type', 'topology', 
-                  'realm', 'subrealm', 'kingdom', 'subkingdom', 
-                  'phylum','subphylum', 'class', 'subclass', 'order', 'suborder', 
-                  'family', 'subfamily', 'genus', 'subgenus', 'species', 
-                  'virus_name_abbreviation', 'virus_name', 'genome_coverage', 
-                  'genome_composition', 'host_source', 'organism', 'host', 'seq_length', 'seq']
+        Args:
+            accession (str): Accession number of the genome.
+
+        Returns:
+            record: Genome record as a Biopython SeqRecord object.
+        """
         
-        self.df = pd.DataFrame(columns = header)
+        print ("fetching accession # ", accession)
+        
+        try:
+            handle = Entrez.efetch(db=self.db , id=accession, rettype="gb", retmode="text")
+            record = SeqIO.read(handle, "gb")
+            handle.close()
+            return record
+        
+        except Exception as e:
+            print(f"Error fetching genome for accession {accession}: {e}")
+            return None
     
-    def get_accession(self, n):
-        if not isinstance(n, str): return None 
-        n_split = n.split(';')
+    @staticmethod
+    def parse_accession(accession):
+        
+        """
+        Extract the first valid accession from a semicolon-separated list.
+
+        Args:
+            accession (str): Accession string.
+
+        Returns:
+            str: The first valid accession.
+        """
+
+        if not isinstance(accession, str): 
+            return None
+        
+        n_split = accession.split(';')
         if  len(n_split) == 1 : return n_split[0].strip()
         else : 
             n_split = n_split[0].split(':')
@@ -54,109 +94,142 @@ class VirusData:
             else: return n_split[1].strip()
     
             
+    def extract_record_data(self, row, genome_record, gb_accession, refseq_accession):
+        
+        """
+        Extract relevant data from a genome record and taxonomy row.
+
+        Args:
+            row (Series): Taxonomy metadata row.
+            genome_record (SeqRecord): Genome record.
+
+        Returns:
+            dict: A dictionary with extracted data.
+        """
+        
+       
+        record = {
+            'sort': row['Sort'],
+            'gb_accession': gb_accession,
+            'refseq_accession': refseq_accession,
+            'accession': genome_record.annotations.get('accessions', [None])[0],
+            'sequence_version': genome_record.annotations.get('sequence_version', None),
+            'date': genome_record.annotations.get('date', None),
+            'molecule_type': genome_record.annotations.get('molecule_type', None),
+            'topology': genome_record.annotations.get('topology', None),
+            'organism': genome_record.name,
+            'host': self.extract_host_from_record(genome_record),
+            'seq_length': len(genome_record.seq),
+            'seq': str(genome_record.seq)
+        }
+
+        # Add taxonomy data
+        taxonomy_keys = [
+            'Realm', 'Subrealm', 'Kingdom', 'Subkingdom', 'Phylum', 'Subphylum',
+            'Class', 'Subclass', 'Order', 'Suborder', 'Family', 'Subfamily', 
+            'Genus', 'Subgenus', 'Species'
+        ]
+        
+        taxonomy_values = row[taxonomy_keys].fillna('').tolist()        
+        taxonomy_dict = dict(zip([key.lower() for key in taxonomy_keys], taxonomy_values))
+        record.update(taxonomy_dict)
+
+        # Add additional metadata
+        record.update({
+            'virus_name_abbreviation': row['Virus name abbreviation(s)'],
+            'virus_name': row['Virus name(s)'],
+            'genome_coverage': row['Genome coverage'],
+            'genome_composition': row['Genome composition'],
+            'host_source': row['Host source']
+        })
+        
+        return record
+    
+    @staticmethod
+    def extract_host_from_record(genome_record):
+        """
+        Extract host information from a genome record.
+    
+        Args:
+            genome_record (SeqRecord): Genome record.
+    
+        Returns:
+            str: Host information or None.
+        """
+        if 'host' in genome_record.annotations:
+            return genome_record.annotations['host']
+        for feature in genome_record.features:
+            if feature.type == "source" and 'host' in feature.qualifiers:
+                return feature.qualifiers['host'][0]
+        return None
     
     def append_records(self, taxa_name = 'all'):
         
-        '''        
-        query = df[
-                    (df['Genome composition'] == 'dsDNA'') &
-                    (df[''Host source''] == 'archaea') |
-                    (df == {taxa_name}).any(axis=1)
-                    ]
-        ''' 
-        seq_type = self.seq_type
+        """
+        Append genome records for a specific taxa or all taxa to the DataFrame.
+
+        Args:
+            taxa_name (str or list): Specific taxa name(s) to fetch records for.
+
+        Returns:
+            DataFrame: Updated DataFrame with genome records.
+        """
         
         df = self.taxo_meta_df
+        
+        # Filter taxa
         if isinstance(taxa_name, list):
             query = df[df.isin(taxa_name).any(axis=1)]  
         else:
             query = df if taxa_name == 'all' else df[(df == taxa_name).any(axis=1)]
         
+        # Process each genome record
         for index, row in query.iterrows():
-            refseq_accession = row['Virus REFSEQ accession']
-            refseq_accession = self.get_accession(refseq_accession)
-            
-            gb_accession = row['Virus GENBANK accession']
-            gb_accession = self.get_accession(gb_accession)
+            refseq_accession = self.parse_accession(row['Virus REFSEQ accession'])
+            gb_accession = self.parse_accession(row['Virus GENBANK accession'])
                 
-            if seq_type == 'refseq':
-                gr_accession = refseq_accession
-            elif seq_type == 'gb':
-                gr_accession = gb_accession
+            if self.seq_type == 'refseq':
+                accession = refseq_accession
+            elif self.seq_type == 'gb':
+                accession = gb_accession
             else:
                 print ("Unknown sequence number ")
                 exit()
                 
-            if gr_accession is None: continue
-            if isinstance(gr_accession, float) and np.isnan(gr_accession): continue
+            if accession is None: continue
+            if isinstance(accession, float) and np.isnan(accession): continue
                 
-            #genome_record = self.fetch_genome(refseq_accession)
-            genome_record = self.fetch_genome(gr_accession)
+            genome_record = self.fetch_genome(accession)
+            if not genome_record:
+                continue
             
-            record = {
-                'sort' : row['Sort'],
-                'gb_accession' : gb_accession,
-                'refseq_accession' : refseq_accession,
-                'accession': genome_record.annotations['accessions'][0],
-                'sequence_version': genome_record.annotations.get('sequence_version', None),
-                'date' : genome_record.annotations['date'],
-                'molecule_type': genome_record.annotations['molecule_type'],
-                'topology': genome_record.annotations['topology'] 
-                }
-
+            # Create a record dictionary           
+            record = self.extract_record_data(row, genome_record, gb_accession, refseq_accession)
+            self.data_frame.loc[len(self.data_frame.index)] = record    
+            self.count +=  1
         
-            taxo_keys = ['Realm', 'Subrealm', 'Kingdom', 'Subkingdom', 'Phylum', 'Subphylum', 
-                 'Class', 'Subclass', 'Order', 'Suborder', 'Family', 'Subfamily', 'Genus', 
-                 'Subgenus', 'Species']
+        return self.data_frame
         
-            taxo_keys_lower = [v.lower() for v in taxo_keys]
-            taxonomy_values = row[taxo_keys].tolist()
-            
-            taxonomy_dict = dict(zip(taxo_keys_lower, taxonomy_values))
-            record.update(taxonomy_dict)
-            
-            record['virus_name_abbreviation'] = row['Virus name abbreviation(s)']
-            record['virus_name']      =     row['Virus name(s)']
-            record['genome_coverage'] = row['Genome coverage']
-            record['genome_composition'] =  row['Genome composition']
-            record['host_source'] = row ['Host source']
-    
-        
-            record['organism'] = genome_record.name
-            record['host'] = None
-            if 'host' in genome_record.annotations:
-                record['host'] = genome_record.annotations['host'] 
-            else:
-                for feature in genome_record.features:
-                    if feature.type == "source" and 'host' in feature.qualifiers:
-                        record['host'] = feature.qualifiers['host'][0]
-                        break
-                
-            record['seq_length'] = len(genome_record.seq)
-            record['seq'] = str(genome_record.seq)    
-            
-            print(self.count, len(genome_record.annotations['taxonomy']), genome_record.annotations['taxonomy'])
-            self.df.loc[len(self.df.index)] = record    
-            self.count = self.count + 1
-        
-        return self.df
-    
     def save (self, file_name):
+        """
+        Save the DataFrame to a CSV file.
+
+        Args:
+            file_name (str): Name of the output file.
+        """
+        
         output_path = os.path.join(HOME_DIR, 'data', file_name)
-        self.df.to_csv(output_path, index = False)
+        self.data_frame.to_csv(output_path, index = False)
+        print(f"Data saved to {output_path}")
         
 if __name__ == "__main__":
     
-    import os
-    # chose which taxas to be downloaded 
-    #viru_taxas = ['Alsuviricetes']
-    viru_taxas = ['Martellivirales']
-    data = VirusData(email = 'aalshaikh@najah.edu', seq_type = 'refseq')
-    df = data.append_records(viru_taxas)
-    #df = df[df['family'] != 'Duinviridae']
-    #df = df[df['molecule_type'] == 'DNA']
-    #data_path = os.path.join(HOME_DIR, "data", "Alsuviricetes_refseq.csv")
-    data_path = os.path.join(HOME_DIR, "data", "Martellivirales_refseq_org.csv")
+   #taxa_lists = ['Alsuviricetes']
+   taxa_list = ['Tymovirales', 'Martellivirales', 'Alsuviricetes']
+   seq_type='refseq'
+   
+   for taxa in taxa_list:
+       loader = VirusDataLoader(email='aalshaikh@najah.edu', seq_type=seq_type)
+       df = loader.append_records(taxa)
+       loader.save(f"{taxa}_{seq_type}_org.csv")   
     
-    data.save(data_path)
-

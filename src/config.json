@@ -1,0 +1,72 @@
+{
+  "tymovirales": { 
+    "modelid": 6,
+    "batch_size": 10,
+    "es_patience": 15,
+    "learning_rate": 0.000015,
+    "epochs": 200,
+    "subseq_len": 1000,
+    "subseq_num": 20,
+    "stride": 1000,
+    "k_folds": 5,
+    "seq_type": "seq",
+    "num_species_thresh": 15,
+    "species_length_thresh": 100,
+    "nucleic_acids": "DNA",
+    "measures_output_file": null
+  },
+  "martellivirales": { 
+    "modelid": 6,
+    "batch_size": 10,
+    "es_patience": 20,
+    "learning_rate": 0.0002,
+    "epochs": 200,
+    "subseq_len": 1000,
+    "subseq_num": 20,
+    "stride": 1000,
+    "k_folds": 5,
+    "seq_type": "seq",
+    "num_species_thresh": 15,
+    "species_length_thresh": 100,
+    "nucleic_acids": "DNA",
+    "classifier": "family",
+    "measures_output_file": null
+  },
+  "alsuviricetes": { 
+    "modelid": 6,
+    "batch_size": 10,
+    "es_patience": 20,
+    "learning_rate": 0.0002,
+    "epochs": 200,
+    "subseq_len": 1000,
+    "subseq_num": 20,
+    "stride": 1000,
+    "k_folds": 5,
+    "seq_type": "seq",
+    "num_species_thresh": 15,
+    "species_length_thresh": 1000,
+    "nucleic_acids": "DNA",
+    "classifier": "order",
+    "measures_output_file": null
+  },
+  "hierarchical_alsuviricetes": { 
+    "modelid": 6,
+    "batch_size": 10,
+    "es_patience": 20,
+    "learning_rate": 0.00015,
+    "epochs": 200,
+    "subseq_len": 1000,
+    "subseq_num": 20,
+    "stride": 1000,
+    "k_folds": 5,
+    "seq_type": "seq",
+    "num_species_thresh": 15,
+    "species_length_thresh": 100,
+    "nucleic_acids": "DNA",
+    "classifier": "order",
+    "measures_output_file": null
+  }
+}
+
+
+

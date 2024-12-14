@@ -267,7 +267,7 @@ class CNNModel:
             y_test = df_test['target'].values
     
             insh = (x_train.shape[1], 4)  # Input shape for one-hot encoded data
-            model = self.build_model(insh, len(dp.terget_to_index))
+            model = self.build_model(insh, len(dp.target_to_index))
     
             # Compute class weights
             class_weights = class_weight.compute_class_weight(class_weight='balanced', classes=np.unique(y_train), y=y_train)
@@ -364,7 +364,7 @@ class CNNModel:
             
             print ("Training model: order ")
             
-            model, hist = self.train_model(df_train_test, dp.terget_to_index)
+            model, hist = self.train_model(df_train_test, dp.target_to_index)
             #with open('history.pkl', 'wb') as file:
                 #pickle.dump(hist, file)
             
@@ -396,7 +396,8 @@ class CNNModel:
                           
             df_test = pd.concat(encoded_dfs, ignore_index=True)
             df_test['order_encoded'] = df_test['target']
-            self.measures.evaluate_hierarchical_models_v5(foldid, df_test)
+            #self.measures.evaluate_hierarchical_models_v5(foldid, df_test)
+            self.measures.evaluate_hierarchical_model_predictions(foldid, df_test)
             # Store the evaluation results
             #self.measures.update(model, df_test, hist, self.config, foldid=foldid)
             #del model

@@ -27,10 +27,10 @@ class DataPreProcess:
         if self.seq_type != 'seq':
             df = df.rename(columns={self.seq_type: 'seq'})
         
-        self.terget_to_index = {taxa: i for i, taxa in enumerate(df['target'].unique())}
-        print("targets_dict: ", self.terget_to_index)
+        self.target_to_index = {taxa: i for i, taxa in enumerate(df['target'].unique())}
+        print("targets_dict: ", self.target_to_index)
         
-        df['target'] = df['target'].map(self.terget_to_index)
+        df['target'] = df['target'].map(self.target_to_index)
         df['id'] = df.index
         
         df_taxo = df[['id', 'target', 'order', 'family']].copy()

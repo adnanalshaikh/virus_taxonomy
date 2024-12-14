@@ -94,15 +94,11 @@ def train_hierarchical_model_for_alsuviricetes():
 # Entry point
 if __name__ == "__main__":
     
-    results = []
-
     # Uncomment specific models to train
     #results.append(train_martellivirales_model())
-    #m = train_tymovirales_model()
-    #results.append(m)
     
-    m = train_hierarchical_model_for_alsuviricetes()
-    results.append(m)
+    #m = train_hierarchical_model_for_alsuviricetes()
+    m = train_tymovirales_model()
     
     #results.append(train_alsuviricetes_model())
 

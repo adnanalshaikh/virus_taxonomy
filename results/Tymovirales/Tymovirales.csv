@@ -1,0 +1,61 @@
+classifier,model,fold,num_epochs,batch_size,learning_rate,loss,accuracy,precision,recall,f1,accuracy_sv,precision_sv,recall_sv,f1_sv,roc_auc,report,conf_matrix,es_patience
+Tymovirales,6,1,46,10,1.5e-05,0.20877674221992493,0.903333306312561,0.9033333333333333,0.9033333333333333,0.9033333333333333,1.0,1.0,1.0,1.0,1.0,"                   precision    recall  f1-score   support
+
+Alphaflexiviridae       1.00      1.00      1.00        13
+ Betaflexiviridae       1.00      1.00      1.00        25
+      Tymoviridae       1.00      1.00      1.00         7
+
+         accuracy                           1.00        45
+        macro avg       1.00      1.00      1.00        45
+     weighted avg       1.00      1.00      1.00        45
+","[[13  0  0]
+ [ 0 25  0]
+ [ 0  0  7]]",30.0
+Tymovirales,6,2,43,10,1.5e-05,0.15768052637577057,0.9411110877990723,0.9411111111111111,0.9411111111111111,0.9411111111111111,1.0,1.0,1.0,1.0,1.0,"                   precision    recall  f1-score   support
+
+Alphaflexiviridae       1.00      1.00      1.00        13
+ Betaflexiviridae       1.00      1.00      1.00        25
+      Tymoviridae       1.00      1.00      1.00         7
+
+         accuracy                           1.00        45
+        macro avg       1.00      1.00      1.00        45
+     weighted avg       1.00      1.00      1.00        45
+","[[13  0  0]
+ [ 0 25  0]
+ [ 0  0  7]]",30.0
+Tymovirales,6,3,43,10,1.5e-05,0.16747722029685974,0.9355555772781372,0.9355555555555556,0.9355555555555556,0.9355555555555556,1.0,1.0,1.0,1.0,1.0,"                   precision    recall  f1-score   support
+
+Alphaflexiviridae       1.00      1.00      1.00        13
+ Betaflexiviridae       1.00      1.00      1.00        25
+      Tymoviridae       1.00      1.00      1.00         7
+
+         accuracy                           1.00        45
+        macro avg       1.00      1.00      1.00        45
+     weighted avg       1.00      1.00      1.00        45
+","[[13  0  0]
+ [ 0 25  0]
+ [ 0  0  7]]",30.0
+Tymovirales,6,4,54,10,1.5e-05,0.2186674028635025,0.9366666674613953,0.9366666666666666,0.9366666666666666,0.9366666666666666,0.9777777777777777,0.9777777777777777,0.9777777777777777,0.9777777777777777,1.0,"                   precision    recall  f1-score   support
+
+Alphaflexiviridae       1.00      0.92      0.96        13
+ Betaflexiviridae       0.96      1.00      0.98        25
+      Tymoviridae       1.00      1.00      1.00         7
+
+         accuracy                           0.98        45
+        macro avg       0.99      0.97      0.98        45
+     weighted avg       0.98      0.98      0.98        45
+","[[12  1  0]
+ [ 0 25  0]
+ [ 0  0  7]]",30.0
+Tymovirales,6,5,44,10,1.5e-05,0.3163151443004608,0.8920454382896423,0.8920454545454546,0.8920454545454546,0.8920454545454546,0.9772727272727273,0.9772727272727273,0.9772727272727273,0.9772727272727273,0.9869417961777894,"                   precision    recall  f1-score   support
+
+Alphaflexiviridae       1.00      0.92      0.96        13
+ Betaflexiviridae       0.96      1.00      0.98        25
+      Tymoviridae       1.00      1.00      1.00         6
+
+         accuracy                           0.98        44
+        macro avg       0.99      0.97      0.98        44
+     weighted avg       0.98      0.98      0.98        44
+","[[12  1  0]
+ [ 0 25  0]
+ [ 0  0  6]]",30.0

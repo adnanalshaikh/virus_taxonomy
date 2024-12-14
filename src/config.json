@@ -2,7 +2,7 @@
   "tymovirales": { 
     "modelid": 6,
     "batch_size": 10,
-    "es_patience": 15,
+    "es_patience": 30,
     "learning_rate": 0.000015,
     "epochs": 200,
     "subseq_len": 1000,

@@ -19,7 +19,7 @@
     "modelid": 6,
     "batch_size": 16,
     "es_patience": 30,
-    "learning_rate": 0.0002,
+    "learning_rate": 0.0004,
     "epochs": 200,
     "subseq_len": 1000,
     "subseq_num": 20,

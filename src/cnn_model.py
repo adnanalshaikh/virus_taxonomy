@@ -295,7 +295,7 @@ class CNNModel:
             gc.collect()
             
             
-            if self.config['print_history']:
+            if self.config.get('print_history', 0):
                 with open(f"{HOME_DIR}\\results\\{dp.classifier_name}\\hist_{dp.classifier_name}_fold_{foldid}.pkl", 'wb') as file:
                     pickle.dump(hist.history, file)
     

@@ -36,8 +36,8 @@
   "alsuviricetes": { 
     "modelid": 6,
     "batch_size": 10,
-    "es_patience": 20,
-    "learning_rate": 0.0002,
+    "es_patience": 30,
+    "learning_rate": 0.0005,
     "epochs": 200,
     "subseq_len": 1000,
     "subseq_num": 20,

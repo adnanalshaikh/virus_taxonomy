@@ -97,8 +97,8 @@ if __name__ == "__main__":
     # Uncomment specific models to train
     #results.append()
     #m = train_tymovirales_model()
-    m = train_martellivirales_model() 
-    #m = train_alsuviricetes_model()
+    #m = train_martellivirales_model() 
+    m = train_alsuviricetes_model()
     #m = train_hierarchical_model_for_alsuviricetes()
 
     #results.append(train_alsuviricetes_model())

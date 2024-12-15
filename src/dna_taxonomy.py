@@ -95,13 +95,13 @@ def train_hierarchical_model_for_alsuviricetes():
 if __name__ == "__main__":
     
     # Uncomment specific models to train
-    #results.append(train_martellivirales_model())
-    
+    #results.append()
+    #m = train_tymovirales_model()
+    m = train_martellivirales_model() 
+    #m = train_alsuviricetes_model()
     #m = train_hierarchical_model_for_alsuviricetes()
-    m = train_tymovirales_model()
-    
-    #results.append(train_alsuviricetes_model())
 
+    #results.append(train_alsuviricetes_model())
     # Save all results to a DataFrame
     #save_results_to_dataframe(results, "all_results.csv")
     

@@ -71,30 +71,6 @@ class Measures:
     
         return combined, df_probs
 
-
-    '''
-    def voting_predict_heirarchy(self, model, df_test):
-        """Perform soft voting predictions with true order tracking for hierarchical models."""
-        y_predict = []
-        seqs_ids = df_test['id'].unique()
-        for seq_id in seqs_ids:
-            df_filtered = df_test[df_test['id'] == seq_id]
-            x_test_seq = np.array([list(seq) for seq in df_filtered['seq']])
-            
-            # Predict for all subsequences
-            y_pred = model.predict(x_test_seq, verbose=0)
-            
-            # Soft voting: average the probabilities
-            sv = np.mean(y_pred, axis=0)
-            y_sv = np.argmax(sv)  # Soft voting result
-
-            # Store the soft voting result for the whole sequence
-            y_true = df_filtered.iloc[0]['order_encoded']
-            y_predict.append([seq_id, y_sv, y_true])
-        
-        return np.array(y_predict)
-    '''
-
     def voting_predict_heirarchy(self, model, df_test):
         y_predict = []
         seqs_ids = df_test['id'].unique()
@@ -113,7 +89,6 @@ class Measures:
             y_predict.append([seq_id, y_sv])
         
         return np.array(y_predict)
-
 
 
     def calculate_metrics(self, y_true, y_pred):

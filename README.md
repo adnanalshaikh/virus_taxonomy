@@ -62,8 +62,10 @@ virus_taxonomy/
 ```
 
 ## **Citation**
+<!--
 If you use this code or methodology in your work, please cite the following paper:
 Salman, A., & Khuffash, N. (2024). Hierarchical Classification of Viral DNA Sequences Using a CNN-LSTM Framework.
+-->
 
 ## **Resources**
 

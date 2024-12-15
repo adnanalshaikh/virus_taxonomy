@@ -17,8 +17,8 @@
   },
   "martellivirales": { 
     "modelid": 6,
-    "batch_size": 10,
-    "es_patience": 20,
+    "batch_size": 16,
+    "es_patience": 30,
     "learning_rate": 0.0002,
     "epochs": 200,
     "subseq_len": 1000,
@@ -30,6 +30,7 @@
     "species_length_thresh": 100,
     "nucleic_acids": "DNA",
     "classifier": "family",
+    "print_history": 0,
     "measures_output_file": null
   },
   "alsuviricetes": { 

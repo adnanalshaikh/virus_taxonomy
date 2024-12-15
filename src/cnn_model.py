@@ -275,7 +275,7 @@ class CNNModel:
     
             # Callbacks
             early_stopping = EarlyStopping(monitor='val_loss', patience=self.config['es_patience'], restore_best_weights=True)
-            reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, verbose=1, min_lr=1e-10)
+            reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, verbose=1, min_lr=1e-7)
     
             # Train the model using the training/validation split (validation is used for tuning)
             hist = model.fit(
@@ -295,10 +295,10 @@ class CNNModel:
             gc.collect()
             
             
-            with open(f'hist_{dp.classifier_name}_fold_{foldid}.pkl', 'wb') as file:
-                pickle.dump(hist.history, file)
+            if self.config['print_history']:
+                with open(f"{HOME_DIR}\\results\\{dp.classifier_name}\\hist_{dp.classifier_name}_fold_{foldid}.pkl", 'wb') as file:
+                    pickle.dump(hist.history, file)
     
-            print("================================================")
             print("================================================")
             print(self.measures.df)
             print("accuracy_sv: " ,  self.measures.df['accuracy_sv'] .mean())

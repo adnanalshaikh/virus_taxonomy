@@ -45,20 +45,25 @@ pip install -r requirements.txt
 ## **Directory Structure**
 ```bash
 virus_taxonomy/
-├── src/                        # Main source code
-│   ├── dna_taxonomy.py         # Entry point for running the pipeline
-│   ├── cnn_model.py            # CNN-LSTM model implementation
-│   ├── measures.py             # Functions for performance evaluation
-│   ├── preprocess.py           # Preprocessing functions
-│   ├── dna_data_loader.py      # Utilities for data retrieval from NCBI
-├── data/                       # Input data
-│   ├── Tymovirales_refseq.csv  # Extracted data using dna_data_loader.py
-│   ├── Martellivirales_refseq.csv # Extracted data using dna_data_loader.py
-│   ├── Alsuviricetes_refseq.csv   # Extracted data using dna_data_loader.py
-│   ├── VMR_MSL39_v1.xlsx          # Virus metadata file downloaded from ICTV (https://ictv.global/vmr)
-├── results/                    # Directory for outputs
-├── requirements.txt            # Dependencies for the project
-└── README.md                   # Documentation
+├── src/                            # Main source code
+│   ├── dna_taxonomy.py             # Entry point for running the pipeline
+│   ├── cnn_model.py                # CNN-LSTM model implementation
+│   ├── measures.py                 # Functions for performance evaluation
+│   ├── preprocess.py               # Preprocessing functions
+│   ├── dna_data_loader.py          # Utilities for data retrieval from NCBI
+├── data/                           # Input data
+│   ├── Tymovirales_refseq.csv      # Extracted data using dna_data_loader.py
+│   ├── Martellivirales_refseq.csv  # Extracted data using dna_data_loader.py
+│   ├── Alsuviricetes_refseq.csv    # Extracted data using dna_data_loader.py
+│   ├── VMR_MSL39_v1.xlsx           # Virus metadata file downloaded from ICTV (https://ictv.global/vmr)
+├── results/                    
+│   ├── Tymovirales/Tymovirales.csv         # Tymovirales classifier performance results
+│   ├── Martellivirales/Martellivirales.csv # Martellivirales classifier performance results
+│   ├── Alsuviricetes/
+│   │   ├── Alsuviricetes.csv       # Alsuviricetes classifier performance results 
+│   │   ├── Alsuviricetes_h.csv     # Heirarichal Alsuviricetes  classifier performance results
+├── requirements.txt                # Dependencies for the project
+└── README.md                       # Documentation
 ```
 
 ## **Citation**
